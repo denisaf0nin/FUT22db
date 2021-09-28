@@ -53,7 +53,7 @@ def player(url):
          'Club': club, 'Card Type': card_type, 'Rare': rare}
     return player_data
 
-for page_number in range(1,number_of_pages+1):
+for page_number in range(1, number_of_pages+1):
     print(page_number)
     url = "https://www.futbin.com/22/players?page=" + str(page_number)
     players = players_list(url)
@@ -63,3 +63,4 @@ for page_number in range(1,number_of_pages+1):
         print(player_data['Name'])
     data.to_excel('fut22.xlsx')
 
+# Stopped at 476
