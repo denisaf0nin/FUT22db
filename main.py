@@ -1,5 +1,3 @@
-# Access denied on page 89. Try running with time.sleep and custom headers
-
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -33,27 +31,44 @@ def players_list(url):
     players = ["https://www.futbin.com" + player for player in players]
     return players
 
-
 def player(url):
+    player_data = {"URL": url}
     player_page = requests.get(url)
     player_soup = BeautifulSoup(player_page.content, "html.parser")
-    name = player_soup.find('div', {"class": "pcdisplay-name"}).text
-    rating = player_soup.find('div', {"class": "pcdisplay-rat"}).text
-    position = player_soup.find('div', {"class": "pcdisplay-pos"}).text
+
+    player_data["Name"] = player_soup.find('div', {"class": "pcdisplay-name"}).text
+
+    age = player_soup.find_all('tr', {"class": 'info_tr_1'})
+    player_data["Date of Birth"] = age[0].find('td').find('a')["title"].strip()
+
+    player_data["Rating"] = player_soup.find('div', {"class": "pcdisplay-rat"}).text
+    player_data["Position"] = player_soup.find('div', {"class": "pcdisplay-pos"}).text
 
     tab = player_soup.find_all('tr', {"class": ""})
     tab = [x for x in tab if x.find('th') != None]
 
-    nation = [x.find("td", {'class': 'table-row-text'}).text for x in tab if x.find('th').text == "Nation"][0]
-    league = [x.find("td", {'class': 'table-row-text'}).text for x in tab if x.find('th').text == "League"][0]
-    club = [x.find("td", {'class': 'table-row-text'}).text for x in tab if x.find('th').text == "Club"][0]
-    card_type = player_soup.find("div", id="Player-card").get_attribute_list("data-level")[0]
-    rare = player_soup.find("div", id="Player-card").get_attribute_list("data-rare-type")[0]
-    player_data = {'Name': name, 'Rating': rating, 'Position': position, 'Nation': nation, 'League': league,
-         'Club': club, 'Card Type': card_type, 'Rare': rare}
+    for i in ["Nation", "League", "Club", "Skills", "Weak Foot", "Foot", "Height", "Weight", "Att. WR", "Def. WR"]:
+        player_data[i] = getInfo(i, tab)
+
+    player_data["Card Type"] = player_soup.find("div", id="Player-card").get_attribute_list("data-level")[0]
+    player_data["Rare"] = player_soup.find("div", id="Player-card").get_attribute_list("data-rare-type")[0]
+
+    attr_groups = player_soup.find_all("div", {"class": "col-md-4 col-lg-4 col-6"})
+    attrs = dict()
+    for group in attr_groups:
+        attr_names = [x.text for x in group.find_all('span', {"class": "ig-stat-name-tooltip"})]
+        attr_vals = [x.text.strip() for x in group.find_all('div', {'class': "stat_val"})]
+        attrs.update(dict(zip(attr_names, attr_vals)))
+
+    player_data.update(attrs)
     return player_data
 
-for page_number in range(1, number_of_pages+1):
+def getInfo(str, tab):
+    info = [x.find("td", {'class': 'table-row-text'}).text for x in tab if x.find('th').text.strip() == str][0]
+    return info
+
+
+for page_number in range(1, 2):  #number_of_pages+1
     print(page_number)
     url = "https://www.futbin.com/22/players?page=" + str(page_number)
     players = players_list(url)
@@ -64,3 +79,5 @@ for page_number in range(1, number_of_pages+1):
     data.to_excel('fut22.xlsx')
 
 # Stopped at 476
+
+player_data
